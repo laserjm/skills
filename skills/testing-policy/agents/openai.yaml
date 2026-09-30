@@ -1,0 +1,4 @@
+interface:
+  display_name: "Testing Policy"
+  short_description: "Protect workflows, interfaces, and calculations"
+  default_prompt: "Use $testing-policy to choose durable tests for this change."
