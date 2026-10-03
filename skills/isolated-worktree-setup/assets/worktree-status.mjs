@@ -12,7 +12,7 @@ import {
 import { createServer } from "node:net";
 import { basename, isAbsolute, join } from "node:path";
 import { slotRegistry } from "./worktree-slots.mjs";
-import { identity, readProcess } from "./worktree-process.mjs";
+import { identity } from "./worktree-process.mjs";
 
 function output(command, args, cwd) {
   return execFileSync(command, args, {
@@ -60,8 +60,44 @@ function presence(path) {
 }
 
 function processStatus(file) {
-  const record = readProcess(file);
-  return record ? { state: "running", pid: record.pid } : { state: "stopped" };
+  const record = readJson(file);
+  if (record === undefined) return { state: "stopped" };
+  if (
+    !record ||
+    !Number.isSafeInteger(record.pid) ||
+    record.pid <= 0 ||
+    typeof record.identity !== "string" ||
+    !record.identity
+  )
+    throw new Error("Invalid process record");
+  function alive() {
+    try {
+      process.kill(record.pid, 0);
+      return true;
+    } catch (error) {
+      if (error.code === "ESRCH") return false;
+      throw error;
+    }
+  }
+  if (!alive()) return { state: "stopped" };
+  let current;
+  try {
+    current = output("ps", [
+      "-p",
+      String(record.pid),
+      "-o",
+      "lstart=",
+      "-o",
+      "pgid=",
+    ]);
+  } catch (error) {
+    if (!alive()) return { state: "stopped" };
+    throw error;
+  }
+  if (!current) throw new Error("Empty process inspection");
+  return current === record.identity
+    ? { state: "running", pid: record.pid }
+    : { state: "stopped" };
 }
 
 function ownerDetails(record, registered) {
@@ -163,6 +199,10 @@ function containerProject(container) {
   );
 }
 
+function containerActive(container) {
+  return !["exited", "created", "dead"].includes(container.state);
+}
+
 export function inspectSlots(root) {
   const registry = slotRegistry();
   const slots = [1, 2, 3].map((slot) => ({
@@ -257,7 +297,10 @@ export function inspectSlots(root) {
     if (
       slot.owners.length > 1 ||
       slot.containers.some(
-        (c) => projects.length && !projects.includes(c.project),
+        (c) =>
+          projects.length &&
+          !projects.includes(c.project) &&
+          containerActive(c),
       )
     )
       slot.state = "conflict";
@@ -275,18 +318,26 @@ export function inspectSlots(root) {
           : owner.registered
             ? "reserved"
             : "legacy";
-    } else if (slot.containers.length) slot.state = "unregistered";
-    const live = slot.containers.filter(
-      (c) => !["exited", "created", "dead"].includes(c.state),
+    } else if (slot.containers.some(containerActive))
+      slot.state = "unregistered";
+    const currentContainers = slot.containers.filter(
+      (c) => projects.includes(c.project) || containerActive(c),
     );
+    const live = currentContainers.filter(containerActive);
     slot.stack =
       docker.state === "unknown"
         ? "unknown"
-        : live.length
-          ? live.length === slot.containers.length
-            ? "running"
-            : "partial"
-          : "stopped";
+        : live.some(
+              (c) =>
+                c.state !== "running" ||
+                /\(unhealthy\)|health: starting/.test(c.status),
+            )
+          ? "degraded"
+          : live.length
+            ? live.length === currentContainers.length
+              ? "running"
+              : "partial"
+            : "stopped";
   }
   return { registry, docker: docker.state, warnings, slots };
 }
@@ -438,11 +489,7 @@ export async function removeStaleSlot(root, slot, dryRun = false) {
       throw new Error(
         `Cannot remove slot ${slot}: ${target.state}; resolve inspection warnings/conflicts first.`,
       );
-    if (
-      target.containers.some(
-        (container) => !["exited", "created", "dead"].includes(container.state),
-      )
-    )
+    if (target.containers.some(containerActive))
       throw new Error(
         "Stack containers are still active. Inspect and stop the orphaned stack first.",
       );
