@@ -49,6 +49,11 @@ Use the bundled `assets/worktree-slots.mjs` for the shared reservation protocol
 and `assets/worktree-process.mjs` for POSIX preview lifecycle management when
 the target uses Node. Read their interfaces before copying them. Keep slot
 ownership compatible across apps; adapt application commands separately.
+The bundled `assets/worktree-status.mjs` adds shared-slot inspection and explicit
+stale-reservation cleanup. Its Node interface and discovery limits are described
+in [the implementation contract](references/implementation.md#slot-inspection-and-stale-cleanup).
+Adapt its metadata directory, launcher command, and URL/port presentation if the
+target uses a different layout. Keep it alongside the slot and process helpers.
 The process helper checks for HTTP 200 at a caller-supplied readiness URL.
 Choose a stable route and set its Host header to the exact preview hostname.
 
@@ -63,6 +68,11 @@ Remove contradictory bans on agents starting dev servers. Keep the T3 creation
 hook limited to copying missing ignored env files; preparation runs when the
 agent starts work. Add a concise `isolated-worktree.md` covering the human and
 agent commands, URL discovery, tunnel, resume, stop, and release.
+Include `status [slot] [--json]`, `find-stale [--json]`, and
+`remove-stale <slot> [--dry-run]`. A stale reservation has a missing worktree;
+stopped worktrees retain ownership. Cleanup is explicit and removes only the
+reservation after verifying services have stopped; it never creates capacity
+by evicting an existing owner.
 
 ## Validate and hand off
 
@@ -71,6 +81,11 @@ registry. Demonstrate three successful reservations, a rejected fourth, reuse
 by the owner, and reuse after the owner stops and releases. Test that setup
 preserves existing review data and that preview shutdown stops owned descendants
 without signalling an unrelated process. Run the target's relevant checks.
+Test slot inspection from an unassigned checkout, discovery across repositories,
+legacy assignments, conflicting owners, malformed records, and unavailable
+Docker. Test stale cleanup refusal for live services and listeners, dry-run
+preservation, concurrent cleanup, and retained volumes after release. Use the
+CLI as the contract seam and disposable services/registries for these tests.
 
 When live validation is in scope and capacity is available, start an isolated
 stack, seed it, and verify its preview through the Mac tunnel. Check login and
