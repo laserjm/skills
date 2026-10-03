@@ -21,6 +21,9 @@ ignored directory such as `.dev/geekom`. Never copy this directory between trees
 | `dev` | Optional foreground preview using the same stack and process tracking. |
 | `worker` | Optional, separately tracked worker using the same stack. |
 | `info` | Show assignment, URLs, process status, and cleanup command without exposing keys. |
+| `status [slot] [--json]` | Read-only inventory of shared reservations, worktrees, branches, stack/container state, volumes, managed processes, URLs, and logs. Works from an unassigned checkout. |
+| `find-stale [--json]` | List reservations whose worktree is missing, including remaining services and inspection warnings. Stopped worktrees are not stale. |
+| `remove-stale <slot> [--dry-run]` | Explicitly remove one valid missing-owner reservation only after successful service/process/port checks; retain containers and volumes. |
 | `stop` | Stop owned preview/worker process groups and this stack, retaining database volumes. |
 | `release` | Free the global reservation only after owned and unowned local processes and stack containers have stopped; keep DB volumes. |
 | `tunnel` | On the Mac, forward the shared slot ports through the configured SSH host. |
@@ -40,6 +43,48 @@ Seed scripts must use the assigned stack and development fixtures. Disable paid
 or outbound processing during fixture creation. Explicitly apply migrations
 through the pinned CLI. Changes to maintained Supabase configuration require
 stopping this stack before regenerating its config.
+
+## Slot inspection and stale cleanup
+
+The bundled `worktree-status.mjs` exports `inspectSlots(root)`,
+`printSlots(report, json)`, and `removeStaleSlot(root, slot, dryRun)`. Route these
+commands before the launcher's assignment requirement and per-worktree lifecycle
+lock. Validate CLI arguments first; removal requires exactly one slot in `1..3`.
+Inspection must not call prepare, claim, setup, seed, or start.
+
+The bundled helper uses `.dev/geekom/worktree.json` and the sibling process
+records, the shared port map, and `node scripts/dev-worktree.mjs stop` for its
+printed shutdown command. Adapt those presentation/discovery details to the
+target repository. Keep credentials out of both text and JSON output. Do not
+dump Docker environment variables or Supabase status credentials.
+
+Combine the shared registry with Git worktrees in known repositories and Docker
+project/workdir labels. Show legacy/unregistered stacks and conflicts rather
+than inventing an owner. Stopped unregistered worktrees in unknown repositories
+cannot be discovered; document this limit and require legacy migration before
+cross-repository allocation. A failed Docker/Git/filesystem inspection is
+unknown, not evidence of availability. Distinguish retained volumes from active
+services. Managed PID status does not account for untracked legacy servers.
+
+Cleanup removes only a well-formed protocol-v1 reservation whose root is missing.
+Refuse an existing owner, conflicting evidence, active containers, failed
+inspection, surviving worktree processes, or occupied ports anywhere in the
+slot's IPv4/IPv6 map. The bundled cleanup runs on Linux/Geekom and uses `/proc`
+to inspect unprivileged host processes for matching cwd or inherited stack
+selection, including processes whose cwd was deleted. Privileged system
+services are outside the launcher process model; container processes are checked
+through Docker. Other platforms must refuse cleanup until an equivalent process
+inspection is implemented. Never kill an unverified PID or stop services as a
+side effect of removing a reservation.
+
+Serialize concurrent cleanup with an exclusive per-slot lock, and recheck the
+reservation and missing root after asynchronous checks before unlinking. A
+crashed cleanup can leave `slot-N.cleanup.json`; report its path and require PID
+identity inspection before manual lock removal. `--dry-run` performs the same
+checks without removing the reservation. It may briefly create the cleanup lock
+and bind slot ports for availability probes. There is no automatic cleanup from
+setup and no force-delete mode for malformed records. Use the owning worktree's
+stop/release flow when it still exists.
 
 ## Supabase and application wiring
 

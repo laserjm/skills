@@ -81,6 +81,20 @@ Release validates the owner and deletes only its reservation. The caller must
 serialize lifecycle commands per worktree and confirm services are stopped.
 `slotRegistry()` gives the directory to inspect when all slots are occupied.
 
+Global `status` and `find-stale` commands must be read-only and must not claim
+slots. An explicit `remove-stale <slot>` command may remove a missing owner's
+reservation after checking its validity, conflicting assignments, actual
+containers/processes, and the full port map. This is separate from allocation;
+setup must never invoke it automatically to make room. Keep containers and
+volumes, and refuse cleanup whenever inspection is uncertain. A stopped
+worktree retains its reservation regardless of how long it has been stopped.
+
+The bundled cleanup uses `slot-N.cleanup.json` to serialize removal callers.
+It contains PID and start identity, has mode `0600`, and is removed on normal
+completion or failure. An abandoned cleanup lock requires manual identity
+inspection. Reservation files remain protocol v1 and compatible with existing
+claim/release launchers; the cleanup lock does not reserve or reassign a slot.
+
 ## Installing alongside existing launchers
 
 Before introducing a launcher in another repository, inventory every known
