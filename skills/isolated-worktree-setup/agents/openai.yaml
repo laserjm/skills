@@ -1,0 +1,4 @@
+interface:
+  display_name: "Isolated worktree setup"
+  short_description: "Shared Geekom slots and isolated PR previews"
+  default_prompt: "Use $isolated-worktree-setup to add isolated Supabase worktrees and running PR previews to this repository."
