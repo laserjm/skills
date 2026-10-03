@@ -2,31 +2,34 @@
 
 ## Commands and persistence
 
-Use one development-only entry point, such as `node scripts/dev-worktree.mjs`.
-Resolve the target from the current working directory's real Git root, so a
-helper in an updated main checkout can operate on an older feature worktree.
+Install `@laserjm/geekom-worktrees` at an immutable Git commit and use its
+`geekom-worktrees` executable, typically through `npm run worktree -- <command>`.
+Read the selected revision’s README for `geekom-worktrees.config.mjs`. The package
+resolves the current directory’s canonical Git root. Update older branches with
+the dependency and configuration before using the new commands; do not retain
+local implementation helpers or script wrappers.
 Store generated config, assignment metadata, PID records, and logs under an
 ignored directory such as `.dev/geekom`. Never copy this directory between trees.
 
-| Command | Contract |
-| --- | --- |
-| `prepare [slot]` | Reuse the worktree's assignment or atomically claim a free shared slot; derive isolated config without starting services. |
-| `setup [slot]` | Prepare, start this stack, seed only a new database or retry interrupted initial seeding. |
-| `start` | Start the assigned stack, preserving existing data. |
-| `seed` | Explicitly restore fixtures only in the assigned local stack. |
-| `supabase ...` | Invoke the repository's pinned CLI with the generated workdir; reject a caller-supplied workdir override. |
-| `test`, `test:browser` | Inject the assigned stack's endpoints and credentials; use the slot's separate browser-test port. |
-| `preview` | Start or reuse an owned detached preview, wait for readiness, and print its exact URL, status, log, and shutdown command. |
-| `preview:stop` | Stop only this worktree's managed preview. |
-| `dev` | Optional foreground preview using the same stack and process tracking. |
-| `worker` | Optional, separately tracked worker using the same stack. |
-| `info` | Show assignment, URLs, process status, and cleanup command without exposing keys. |
-| `status [slot] [--json]` | Read-only inventory of shared reservations, worktrees, branches, stack/container state, volumes, managed processes, URLs, and logs. Works from an unassigned checkout. |
-| `find-stale [--json]` | List reservations whose worktree is missing, including remaining services and inspection warnings. Stopped worktrees are not stale. |
-| `remove-stale <slot> [--dry-run]` | Explicitly remove one valid missing-owner reservation only after successful service/process/port checks; retain containers and volumes. |
-| `stop` | Stop owned preview/worker process groups and this stack, retaining database volumes. |
-| `release` | Free the global reservation only after owned and unowned local processes and stack containers have stopped; keep DB volumes. |
-| `tunnel` | On the Mac, forward the shared slot ports through the configured SSH host. |
+| Command                           | Contract                                                                                                                                                               |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prepare [slot]`                  | Reuse the worktree's assignment or atomically claim a free shared slot; derive isolated config without starting services.                                              |
+| `setup [slot]`                    | Prepare, start this stack, seed only a new database or retry interrupted initial seeding.                                                                              |
+| `start`                           | Start the assigned stack, preserving existing data.                                                                                                                    |
+| `seed`                            | Explicitly restore fixtures only in the assigned local stack.                                                                                                          |
+| `supabase ...`                    | Invoke the repository's pinned CLI with the generated workdir; reject a caller-supplied workdir override.                                                              |
+| `test`, `test:browser`            | Inject the assigned stack's endpoints and credentials; use the slot's separate browser-test port.                                                                      |
+| `preview`                         | Start or reuse an owned detached preview, wait for readiness, and print its exact URL, status, log, and shutdown command.                                              |
+| `preview:stop`                    | Stop only this worktree's managed preview.                                                                                                                             |
+| `dev`                             | Optional foreground preview using the same stack and process tracking.                                                                                                 |
+| `worker`                          | Optional, separately tracked worker using the same stack.                                                                                                              |
+| `info`                            | Show assignment, URLs, process status, and cleanup command without exposing keys.                                                                                      |
+| `status [slot] [--json]`          | Read-only inventory of shared reservations, worktrees, branches, stack/container state, volumes, managed processes, URLs, and logs. Works from an unassigned checkout. |
+| `find-stale [--json]`             | List reservations whose worktree is missing, including remaining services and inspection warnings. Stopped worktrees are not stale.                                    |
+| `remove-stale <slot> [--dry-run]` | Explicitly remove one valid missing-owner reservation only after successful service/process/port checks; retain containers and volumes.                                |
+| `stop`                            | Stop owned preview/worker process groups and this stack, retaining database volumes.                                                                                   |
+| `release`                         | Free the global reservation only after owned and unowned local processes and stack containers have stopped; keep DB volumes.                                           |
+| `tunnel`                          | On the Mac, forward the shared slot ports through the configured SSH host.                                                                                             |
 
 Serialize lifecycle operations per worktree using exclusive filesystem creation.
 A foreground server or worker must release the startup lock after its process
@@ -46,17 +49,12 @@ stopping this stack before regenerating its config.
 
 ## Slot inspection and stale cleanup
 
-The bundled `worktree-status.mjs` exports `inspectSlots(root)`,
-`printSlots(report, json)`, and `removeStaleSlot(root, slot, dryRun)`. Route these
-commands before the launcher's assignment requirement and per-worktree lifecycle
-lock. Validate CLI arguments first; removal requires exactly one slot in `1..3`.
-Inspection must not call prepare, claim, setup, seed, or start.
-
-The bundled helper uses `.dev/geekom/worktree.json` and the sibling process
-records, the shared port map, and `node scripts/dev-worktree.mjs stop` for its
-printed shutdown command. Adapt those presentation/discovery details to the
-target repository. Keep credentials out of both text and JSON output. Do not
-dump Docker environment variables or Supabase status credentials.
+The package owns the status/cleanup implementation. Consumers configure the
+application and use `status`, `find-stale` and `remove-stale` through the CLI.
+These commands do not require an assigned caller or application configuration.
+The shared layout is `.dev/geekom/worktree.json` with sibling process records.
+Shutdown output points to the installed package executable. Keep credentials
+out of status output; never dump Docker environments or Supabase status keys.
 
 Combine the shared registry with Git worktrees in known repositories and Docker
 project/workdir labels. Show legacy/unregistered stacks and conflicts rather
@@ -69,7 +67,7 @@ services. Managed PID status does not account for untracked legacy servers.
 Cleanup removes only a well-formed protocol-v1 reservation whose root is missing.
 Refuse an existing owner, conflicting evidence, active containers, failed
 inspection, surviving worktree processes, or occupied ports anywhere in the
-slot's IPv4/IPv6 map. The bundled cleanup runs on Linux/Geekom and uses `/proc`
+slot's IPv4/IPv6 map. The package cleanup runs on Linux/Geekom and uses `/proc`
 to inspect unprivileged host processes for matching cwd or inherited stack
 selection, including processes whose cwd was deleted. Privileged system
 services are outside the launcher process model; container processes are checked
@@ -131,21 +129,13 @@ as part of repository setup without a separate request.
 
 ## Managed previews
 
-The bundled `worktree-process.mjs` provides:
-
-- `runCommand(command, args, {cwd, env, detached, processFile, onSpawn})` for
-  foreground processes, signal forwarding, and optional ownership records.
-- `startManaged({file, log, cwd, command, args, env, url, host, timeout})` for a
-  detached process group with an HTTP 200 readiness check.
-- `readProcess(file)`, `identity(pid)`, and `stopManaged(file)` for ownership.
-- `assertPortFree(port)` for a loopback bind probe.
-
-Run a supervisor that stays alive while its server descendants run. If the
-supervisor uses `runCommand`, pass `detached: false` so descendants remain in the
-recorded group. Record PID, process start identity, and group; a PID alone can be
-reused by an unrelated process. Stop only a verified owned group. Refuse to take
-over an existing untracked frontend or framework lock. A failed new preview
-must be stopped; don't hand out a ready URL when its health check failed.
+The package owns process identity, foreground signal forwarding, detached
+supervision, readiness checks and shutdown. Configure a stable HTTP readiness
+route and, where applicable, a repository-relative JSON PID lock file. Frontend
+commands must bind loopback, fail on occupied ports and leave their descendants
+in the process group the launcher manages. Do not add a second process manager.
+The package sends the exact preview Host header and waits for HTTP 200. A failed
+new preview is stopped and must not be reported as ready.
 
 Stop the preview and worker before fixture-mutating tests or explicit seeding.
 Use a distinct browser-test port, with the selected backend injected into both
@@ -170,11 +160,11 @@ migrate old ownership records, and recover stale reservations through inspection
 
 ## Evidence to include
 
-Automate concurrency across independent repositories, owner reuse, capacity,
-release/reallocation, seed retry and data preservation, preview readiness/failure,
-and safe process-group shutdown. Use external-command stand-ins where live
-Supabase is unsuitable for CI, and real disposable child processes for lifecycle
-checks. Keep tests away from the real home registry and services.
+Run the package’s shared suite on Linux when editing the implementation; macOS
+must refuse Linux-only stale cleanup. Consumer coverage uses the installed CLI
+and actual repository configuration to verify generated settings and assignment
+reuse with a disposable registry. Keep consumer coverage focused on application
+wiring rather than duplicating allocation and process-management tests.
 
 Use a live preview to verify browser-specific behavior when authorized and
 available. Record which app, stack, hostnames, browser, and paths were tested.
