@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "package": "@laserjm/skills",
+  "version": "1.0.0",
+  "skills": {
+    "isolated-worktree-setup": {
+      "description": "Set up isolated Supabase worktrees on Geekom with three shared slots across repositories, Mac SSH access, and a running preview at PR handoff. Use when installing or adapting this development workflow in a repository.",
+      "files": {
+        "SKILL.md": {
+          "sha256": "0912494833ad30f1de4c41d2f7c15d7286165ed6f148f16aaed4ec75ef4a1a0c",
+          "executable": false
+        },
+        "agents/openai.yaml": {
+          "sha256": "618ac51e87d010cb1599779b65dbca69fe0b2fa35fe89d47051eb0e0faa21c96",
+          "executable": false
+        },
+        "references/implementation.md": {
+          "sha256": "06f0ece5a182584c82f9c69e5efd44f8a1a27e133ee9a6cc0e7c9fe6984e408a",
+          "executable": false
+        },
+        "references/shared-protocol.md": {
+          "sha256": "ccf8ac5196964d4ba1f4570a3d6c07a13576eea8de42d6403b8fd9d6450e4ea2",
+          "executable": false
+        }
+      }
+    },
+    "issue-solution-path": {
+      "description": "Turn an issue, idea, or bug report into a confident, simple solution path by asking what you know, then auditing the code.",
+      "files": {
+        "SKILL.md": {
+          "sha256": "cbd8b61f406bf5ce366a566c10772a1029aef243c6616cf8800a213f50b9f928",
+          "executable": false
+        }
+      }
+    },
+    "testing-policy": {
+      "description": "Contract testing policy. Use when choosing coverage for a critical user workflow, public API/action/mutation, deep module, or business-critical calculation.",
+      "files": {
+        "SKILL.md": {
+          "sha256": "d3d7280ab8f5afccf7d8d958995d87ed954f613743570a91a65711569a029656",
+          "executable": false
+        },
+        "agents/openai.yaml": {
+          "sha256": "c4a612cc854468795652308c150b71163448da2d5ff6fa36a0eaf1dcb5c73ec7",
+          "executable": false
+        }
+      }
+    }
+  }
+}
