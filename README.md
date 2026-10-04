@@ -3,7 +3,7 @@
 `@laserjm/skills` is an npm development package installed directly from this
 GitHub repository at a full commit SHA. It provides selected, repository-scoped
 skills plus explicit synchronization and read-only drift checks. No package
-registry or install-time build is needed. Node 22 or newer is required.
+private registry or install-time build is needed. Node 22 or newer is required.
 
 ## Install in a downstream repository
 
@@ -103,7 +103,7 @@ marker from Git before syncing; the CLI does not silently adopt directories.
 
 ## Downstream CI
 
-Copy [the drift workflow](examples/skills-check.yml) into the consumer's
+Copy [the drift workflow](https://github.com/laserjm/skills/blob/main/examples/skills-check.yml) into the consumer's
 `.github/workflows/` and make its **Skills drift** check required in repository
 settings. Run it on every PR, including dependency and instruction changes:
 
@@ -139,7 +139,7 @@ A newly released upstream commit leaves existing consumers and feature branches
 on their chosen pins. Required CI detects divergence from that pin, while a
 scheduled updater handles adoption of newer releases.
 
-[The optional updater workflow](examples/update-skills.yml) runs weekly or on
+[The optional updater workflow](https://github.com/laserjm/skills/blob/main/examples/update-skills.yml) runs weekly or on
 manual dispatch. It resolves the latest stable GitHub release tag to its full
 commit SHA, verifies the current installation before updating, synchronizes and
 checks the new package, and opens a PR with all generated files. It reuses an
