@@ -149,11 +149,13 @@ test('deselection and target changes remove owned skills while preserving unrela
   const local = path.join(project, '.agents/skills/local-workflow');
   await mkdir(local);
   await writeFile(path.join(local, 'SKILL.md'), 'local');
+  await writeFile(path.join(local, '.laserjm-skill.json'), 'null\n');
   await configure(project, ['testing-policy'], ['.agents/skills']);
   fails(cli(project, 'check'), /Stale managed skill/);
   succeeds(cli(project, 'sync'));
   succeeds(cli(project, 'check'));
   assert.equal(await readFile(path.join(local, 'SKILL.md'), 'utf8'), 'local');
+  assert.equal(await readFile(path.join(local, '.laserjm-skill.json'), 'utf8'), 'null\n');
   assert.equal(await statOrNull(path.join(project, '.agents/skills/isolated-worktree-setup')), null);
   assert.equal(await statOrNull(path.join(project, '.claude/skills/testing-policy')), null);
   await configure(project, [], ['.agents/skills']);
@@ -283,6 +285,8 @@ test('a separate tooling project installs into its repository root and supports 
 
 test('invalid configuration, unknown skills, and unsafe receipt paths fail without writes', async () => {
   const project = await consumer();
+  await writeFile(path.join(project, 'skills.config.json'), 'null\n');
+  fails(cli(project, 'sync'), /requires schemaVersion/);
   await configure(project, ['testing-policy'], ['../outside']);
   fails(cli(project, 'sync'), /targets must select/);
   await configure(project, ['testing-policy'], ['.agents/skills'], '/');
@@ -295,6 +299,8 @@ test('invalid configuration, unknown skills, and unsafe receipt paths fail witho
   succeeds(cli(project, 'sync'));
   const receiptFile = path.join(project, 'skills-installed.json');
   const receipt = await readJson(receiptFile);
+  await writeFile(receiptFile, 'null\n');
+  fails(cli(project, 'sync'), /Invalid installation receipt/);
   receipt.installations[0].name = '../local';
   await writeFile(receiptFile, json(receipt));
   fails(cli(project, 'sync'), /Invalid managed paths/);
