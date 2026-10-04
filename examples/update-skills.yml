@@ -1,0 +1,88 @@
+name: Update shared skills
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-shared-skills
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    # Use a bot PAT/App token so the resulting PR triggers ordinary CI.
+    # It needs consumer contents/PR write access and skills repository read access.
+    env:
+      GH_TOKEN: ${{ secrets.SKILLS_UPDATE_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24.13.1'
+          cache: npm
+      - run: npm install --global npm@11.8.0
+      - name: Configure Git credentials
+        run: |
+          test -n "$GH_TOKEN"
+          gh auth setup-git
+          git config --global url."https://github.com/".insteadOf 'ssh://git@github.com/'
+          git config --global --add url."https://github.com/".insteadOf 'git@github.com:'
+      - run: npm ci --include=dev
+      - run: npm run skills:check
+      - name: Resolve the latest stable release and open a complete upgrade PR
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import path from 'node:path';
+          const run = (command, args) => execFileSync(command, args, { encoding: 'utf8' }).trim();
+          const release = JSON.parse(run('gh', ['api', 'repos/laserjm/skills/releases/latest']));
+          if (release.draft || release.prerelease || !/^v\d+\.\d+\.\d+$/.test(release.tag_name)) {
+            throw new Error('Expected a stable skills release.');
+          }
+          const tag = `refs/tags/${release.tag_name}`;
+          const refs = run('git', ['ls-remote', 'https://github.com/laserjm/skills.git', tag, `${tag}^{}`])
+            .split('\n').map((line) => line.split(/\s+/));
+          const sha = refs.find(([, ref]) => ref === `${tag}^{}`)?.[0] ?? refs.find(([, ref]) => ref === tag)?.[0];
+          if (!/^[a-f0-9]{40}$/.test(sha ?? '')) throw new Error('Could not resolve the release commit.');
+          const pin = `github:laserjm/skills#${sha}`;
+          const manifest = JSON.parse(readFileSync('package.json', 'utf8'));
+          if (manifest.devDependencies?.['@laserjm/skills']?.endsWith(`#${sha}`)) {
+            console.log('Already pinned to the latest release.');
+            process.exit(0);
+          }
+          const branch = `chore/skills-${sha.slice(0, 12)}`;
+          const existing = JSON.parse(run('gh', ['pr', 'list', '--head', branch, '--state', 'open', '--json', 'url']));
+          if (existing.length) {
+            console.log(`Existing upgrade PR: ${existing[0].url}`);
+            process.exit(0);
+          }
+          run('git', ['switch', '-c', branch]);
+          run('npm', ['install', '--save-dev', '--save-exact', `@laserjm/skills@${pin}`]);
+          run('npm', ['run', 'skills:sync']);
+          run('npm', ['run', 'skills:check']);
+          const receipt = JSON.parse(readFileSync('skills-installed.json', 'utf8'));
+          if (receipt.repositoryRoot !== '.') throw new Error('Adapt this example for a separate tooling project.');
+          const staged = ['package.json', 'package-lock.json', 'skills-installed.json'];
+          const config = JSON.parse(readFileSync('skills.config.json', 'utf8'));
+          for (const target of config.targets) {
+            for (const name of config.skills) staged.push(`${target}/${name}`);
+          }
+          run('git', ['add', '--', ...staged]);
+          run('git', ['config', 'user.name', 'github-actions[bot]']);
+          run('git', ['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com']);
+          const title = `Update shared skills to ${release.tag_name}`;
+          run('git', ['commit', '-m', title]);
+          run('git', ['push', 'origin', branch]);
+          const bodyFile = path.join(process.env.RUNNER_TEMP, 'skills-upgrade.md');
+          writeFileSync(bodyFile, `Pin @laserjm/skills to ${sha} and synchronize the selected skill directories.\n\n` +
+            `Release: ${release.html_url}\n\n${release.body ?? ''}\n\nValidation: npm run skills:check.\n`);
+          console.log(run('gh', ['pr', 'create', '--head', branch, '--title', title, '--body-file', bodyFile]));
+          NODE
