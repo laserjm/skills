@@ -1,8 +1,7 @@
 {
   "name": "@laserjm/skills",
-  "version": "1.0.0",
   "private": true,
-  "description": "Git-pinned shared agent skills with explicit synchronization and drift checks",
+  "description": "Development tooling for validating shared agent skills",
   "type": "module",
   "repository": {
     "type": "git",
@@ -11,23 +10,12 @@
   "engines": {
     "node": ">=22"
   },
-  "packageManager": "npm@11.8.0",
-  "bin": {
-    "laserjm-skills": "bin/skills.mjs"
-  },
-  "files": [
-    "bin/",
-    "lib/",
-    "skills/",
-    "skills-manifest.json"
-  ],
   "scripts": {
-    "catalog:write": "node scripts/catalog.mjs --write",
-    "catalog:check": "node scripts/catalog.mjs",
+    "validate": "node scripts/validate-skills.mjs",
     "test": "node --test",
-    "check": "npm run catalog:check && npm test"
+    "check": "npm run validate && npm test"
   },
-  "dependencies": {
+  "devDependencies": {
     "yaml": "2.9.1"
   }
 }
