@@ -126,6 +126,9 @@ test('changed, missing, unexpected, and non-executable files fail without healin
   await writeFile(path.join(project, '.agents/skills/testing-policy/extra.md'), 'extra');
   fails(cli(project, 'check'), /Unexpected file/);
   succeeds(cli(project, 'sync'));
+  await writeFile(path.join(project, '.agents/skills/testing-policy/__proto__'), 'extra with an object-key filename');
+  fails(cli(project, 'check'), /Unexpected file.*__proto__/);
+  succeeds(cli(project, 'sync'));
   await chmod(policy, 0o755);
   fails(cli(project, 'check'), /executable mode/);
   succeeds(cli(project, 'sync'));
