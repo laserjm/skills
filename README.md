@@ -2,8 +2,8 @@
 
 `@laserjm/skills` is an npm development package installed directly from this
 GitHub repository at a full commit SHA. It provides selected, repository-scoped
-skills plus explicit synchronization and read-only drift checks. No package
-private registry or install-time build is needed. Node 22 or newer is required.
+skills plus explicit synchronization and read-only drift checks. It needs no
+private package registry or install-time build. Node 22 or newer is required.
 
 ## Install in a downstream repository
 
