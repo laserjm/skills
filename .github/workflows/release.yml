@@ -41,7 +41,7 @@ jobs:
           Install a skill from this release:
 
           \`\`\`sh
-          npx skills add https://github.com/laserjm/skills/tree/$RELEASE_TAG --skill isolated-worktree-setup
+          npx skills add https://github.com/laserjm/skills/tree/$RELEASE_TAG --skill testing-policy
           \`\`\`
 
           Commit the installed skill files and skills-lock.json.

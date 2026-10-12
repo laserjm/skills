@@ -5,7 +5,7 @@ Reusable agent skills installed directly from this repository with the
 from the repository where you want to use the skill:
 
 ```sh
-npx skills add https://github.com/laserjm/skills --skill isolated-worktree-setup
+npx skills add https://github.com/laserjm/skills --skill testing-policy
 ```
 
 The CLI installs the skill and its supporting files for your selected agents.
@@ -16,7 +16,6 @@ Commit project skill files and `skills-lock.json` to share them with your team.
 
 | Skill | Purpose |
 | --- | --- |
-| [isolated-worktree-setup](skills/isolated-worktree-setup/SKILL.md) | Set up isolated Supabase worktrees on Geekom with shared slots and running previews. |
 | [issue-solution-path](skills/issue-solution-path/SKILL.md) | Audit an issue or idea and develop a clear solution path. |
 | [testing-policy](skills/testing-policy/SKILL.md) | Choose contract tests for critical workflows and interfaces. |
 
@@ -30,13 +29,8 @@ To install a skill for Codex and Claude Code as independent copies without
 interactive prompts:
 
 ```sh
-npx skills add https://github.com/laserjm/skills --skill isolated-worktree-setup --agent codex claude-code --copy --yes
+npx skills add https://github.com/laserjm/skills --skill testing-policy --agent codex claude-code --copy --yes
 ```
-
-`isolated-worktree-setup` contains instructions for installing and configuring
-the separate `@laserjm/geekom-worktrees` runtime package. Installing the skill
-makes those instructions available to your agent; adapting the application's
-worktree tooling is a subsequent task.
 
 ## Update skills
 
