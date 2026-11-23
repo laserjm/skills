@@ -1,8 +1,10 @@
 ---
-name: issue-solution-path
-description: Turn an issue, idea, or bug report into a confident, simple solution path by asking what you know, then auditing the code.
+name: issue-solution-path-v1
+description: Deprecated, superseded by change-solution-path. Turn an issue, idea, or bug report into a confident, simple solution path by asking what you know, then auditing the code.
 disable-model-invocation: true
 argument-hint: <issue / idea / bug description>
+metadata:
+  version: "1"
 ---
 
 The deliverable is a **solution path**: a plan the user approves before any code changes. This skill ends at the plan.

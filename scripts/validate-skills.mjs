@@ -70,7 +70,8 @@ export async function validateSkills(directory) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const count = await validateSkills(fileURLToPath(new URL('../skills', import.meta.url)));
-    console.log(`Validated ${count} skills and their local references.`);
+    const deprecated = await validateSkills(fileURLToPath(new URL('../deprecated', import.meta.url)));
+    console.log(`Validated ${count} skills, ${deprecated} deprecated skills, and their local references.`);
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;
