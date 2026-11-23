@@ -16,7 +16,7 @@ Commit project skill files and `skills-lock.json` to share them with your team.
 
 | Skill | Purpose |
 | --- | --- |
-| [issue-solution-path](skills/issue-solution-path/SKILL.md) | Audit an issue or idea and develop a clear solution path. |
+| [change-solution-path](skills/change-solution-path/SKILL.md) | Map a change's blast radius, audit it, and develop a clear solution path. |
 | [testing-policy](skills/testing-policy/SKILL.md) | Choose contract tests for critical workflows and interfaces. |
 
 List the available skills:
@@ -71,6 +71,13 @@ is required to run validation:
 npm ci
 npm run check
 ```
+
+The Agent Skills standard has no version field, so skills record their major
+version as `metadata.version`. A new major version replaces the skill under
+its existing name, so `npx skills update` picks it up. The previous version
+moves to `deprecated/<name>-v<N>/` with a matching `name`. That folder sits
+outside the Skills CLI's search paths, so archived versions stay in the
+repository but cannot be installed.
 
 Validation checks skill names and descriptions, supporting YAML, and local inline
 Markdown links in skill documents. It rejects symlinks and links outside the
